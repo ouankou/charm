@@ -572,13 +572,13 @@ class LBManager : public CBase_LBManager
 
  public:
   int nloadbalancers;
-  CkVec<BaseLB*> loadbalancers;
+  std::vector<BaseLB*> loadbalancers;
 
   std::vector<StartLBCB*> startLBFnList;
   std::vector<MigrationDoneCB*> migrationDoneCBList;
 
  public:
-  BaseLB** getLoadBalancers() { return loadbalancers.getVec(); }
+  BaseLB** getLoadBalancers() { return loadbalancers.data(); }
   int getNLoadBalancers() { return nloadbalancers; }
 
  public:

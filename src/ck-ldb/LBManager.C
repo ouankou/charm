@@ -51,17 +51,16 @@ class LBDBRegistry
     LBDBEntry(const char* n, LBCreateFn cf, LBAllocFn af, const char* h, int show = 1)
         : name(n), cfn(cf), afn(af), help(h), shown(show){};
   };
-  CkVec<LBDBEntry> lbtables;       // a list of available LBs linked
-  CkVec<const char*> compile_lbs;  // load balancers at compile time
-  CkVec<const char*> runtime_lbs;  // load balancers at run time
+  std::vector<LBDBEntry> lbtables;       // a list of available LBs linked
+  std::vector<const char*> compile_lbs;  // load balancers at compile time
+  std::vector<const char*> runtime_lbs;  // load balancers at run time
  public:
   LBDBRegistry() {}
   void displayLBs()
   {
     CmiPrintf("\nAvailable load balancers:\n");
-    for (int i = 0; i < lbtables.length(); i++)
+    for (const auto& entry : lbtables)
     {
-      LBDBEntry& entry = lbtables[i];
       if (entry.shown) CmiPrintf("* %s:	%s\n", entry.name, entry.help);
     }
     CmiPrintf("\n");
@@ -69,7 +68,7 @@ class LBDBRegistry
   void addEntry(const char* name, LBCreateFn fn, LBAllocFn afn, const char* help,
                 int shown)
   {
-    lbtables.push_back(LBDBEntry(name, fn, afn, help, shown));
+    lbtables.emplace_back(name, fn, afn, help, shown);
   }
   void addCompiletimeBalancer(const char* name) { compile_lbs.push_back(name); }
   void addRuntimeBalancer(const char* name) { runtime_lbs.push_back(name); }
@@ -77,16 +76,16 @@ class LBDBRegistry
   {
     char* ptr = strpbrk((char*)name, ":,");
     int slen = ptr != NULL ? ptr - name : strlen(name);
-    for (int i = 0; i < lbtables.length(); i++)
-      if (0 == strncmp(name, lbtables[i].name, slen)) return lbtables[i].cfn;
+    for (const auto& lb : lbtables)
+      if (0 == strncmp(name, lb.name, slen)) return lb.cfn;
     return NULL;
   }
   LBAllocFn getLBAllocFn(const char* name)
   {
     char* ptr = strpbrk((char*)name, ":,");
     int slen = ptr - name;
-    for (int i = 0; i < lbtables.length(); i++)
-      if (0 == strncmp(name, lbtables[i].name, slen)) return lbtables[i].afn;
+    for (const auto& lb : lbtables)
+      if (0 == strncmp(name, lb.name, slen)) return lb.afn;
     return NULL;
   }
 };
@@ -126,19 +125,17 @@ LBMgrInit::LBMgrInit(CkArgMsg* m)
   _lbmgr = CProxy_LBManager::ckNew();
 
   // runtime specified load balancer
-  if (lbRegistry.runtime_lbs.size() > 0)
+  if (!lbRegistry.runtime_lbs.empty())
   {
-    for (int i = 0; i < lbRegistry.runtime_lbs.size(); i++)
+    for (const auto& balancer : lbRegistry.runtime_lbs)
     {
-      const char* balancer = lbRegistry.runtime_lbs[i];
       createLoadBalancer(balancer);
     }
   }
-  else if (lbRegistry.compile_lbs.size() > 0)
+  else if (!lbRegistry.compile_lbs.empty())
   {
-    for (int i = 0; i < lbRegistry.compile_lbs.size(); i++)
+    for (const auto& balancer : lbRegistry.compile_lbs)
     {
-      const char* balancer = lbRegistry.compile_lbs[i];
       createLoadBalancer(balancer);
     }
   }
@@ -654,7 +651,6 @@ int LBManager::getLoadbalancerTicket()
   int seq = nloadbalancers;
   nloadbalancers++;
   loadbalancers.resize(nloadbalancers);
-  loadbalancers[seq] = NULL;
   return seq;
 }
 
@@ -731,14 +727,14 @@ void LBManager::switchLoadbalancer(int switchFrom, int switchTo)
 // runtime has higher priority
 const char* LBManager::loadbalancer(int seq)
 {
-  if (lbRegistry.runtime_lbs.length())
+  if (!lbRegistry.runtime_lbs.empty())
   {
-    CmiAssert(seq < lbRegistry.runtime_lbs.length());
+    CmiAssert(seq < lbRegistry.runtime_lbs.size());
     return lbRegistry.runtime_lbs[seq];
   }
   else
   {
-    CmiAssert(seq < lbRegistry.compile_lbs.length());
+    CmiAssert(seq < lbRegistry.compile_lbs.size());
     return lbRegistry.compile_lbs[seq];
   }
 }
