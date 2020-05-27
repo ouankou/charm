@@ -434,9 +434,9 @@ void CentralLB::buildStats()
        delete msg;
        statsMsgsList[pe]=0;
     }
-    statsData->n_migrateobjs = count_if(statsData->objData.begin(),
-                                        statsData->objData.end(),
-                                        [](const LDObjData& data) { return data.migratable; });
+    statsData->n_migrateobjs =
+        std::count_if(statsData->objData.begin(), statsData->objData.end(),
+                      [](const LDObjData& data) { return data.migratable; });
 }
 
 // deposit one processor data at a time, note database is pre-allocated
@@ -476,9 +476,9 @@ void CentralLB::depositData(CLBStatsMsg *m)
   CmiAssert(statsData->commData.size() + m->n_comm <= statsData->commData.capacity());
   statsData->commData.insert(statsData->commData.end(), m->commData, m->commData + m->n_comm);
 
-  statsData->n_migrateobjs += std::count_if(m->objData,
-                                      m->objData + m->n_objs,
-                                      [](const LDObjData& data) { return data.migratable; });
+  statsData->n_migrateobjs +=
+      std::count_if(m->objData, m->objData + m->n_objs,
+                    [](const LDObjData& data) { return data.migratable; });
   delete m;
 }
 

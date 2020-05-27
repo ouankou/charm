@@ -314,9 +314,9 @@ void HybridBaseLB::buildStats(int atlevel)
   }
   CmiAssert(statsData->objData.size() == nobj);
   CmiAssert(statsData->commData.size() == ncom);
-  statsData->n_migrateobjs = count_if(statsData->objData.begin(),
-                                      statsData->objData.end(),
-                                      [](const LDObjData& data) { return data.migratable; });
+  statsData->n_migrateobjs =
+      std::count_if(statsData->objData.begin(), statsData->objData.end(),
+                    [](const LDObjData& data) { return data.migratable; });
   if (_lb_args.debug()>1) {
     CmiPrintf("[%d] n_obj:%d migratable:%d ncom:%d at level %d at %f.\n", CkMyPe(), nobj, statsData->n_migrateobjs, ncom, atlevel, CkWallTimer());
   } 
