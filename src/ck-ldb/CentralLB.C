@@ -883,16 +883,16 @@ void CentralLB::removeNonMigratable(LDStats* stats, int count)
   }
   if (have == 0) return;
 
-  std::vector<LDObjData> nonmig;
+  std::vector<LDObjData> mig;
   std::vector<int> new_from_proc, new_to_proc;
-  nonmig.reserve(stats->n_migrateobjs);
+  mig.reserve(stats->n_migrateobjs);
   new_from_proc.reserve(stats->n_migrateobjs);
   new_to_proc.reserve(stats->n_migrateobjs);
   for (i=0; i<stats->objData.size(); i++)
   {
     LDObjData &odata = stats->objData[i];
     if (odata.migratable) {
-      nonmig.push_back(odata);
+      mig.push_back(odata);
       new_from_proc.push_back(stats->from_proc[i]);
       new_to_proc.push_back(stats->to_proc[i]);
     }
@@ -903,7 +903,7 @@ void CentralLB::removeNonMigratable(LDStats* stats, int count)
 #endif
     }
   }
-  CmiAssert(stats->n_migrateobjs == nonmig.size());
+  CmiAssert(stats->n_migrateobjs == mig.size());
 
   stats->makeCommHash();
   
@@ -934,10 +934,14 @@ void CentralLB::removeNonMigratable(LDStats* stats, int count)
     newCommData.push_back(cdata);
   }
 
-  if (nonmig.size() != stats->objData.size()) CmiPrintf("Removed %zu nonmigratable %zu comms - n_objs:%d migratable:%zu\n", stats->objData.size()-nonmig.size(), stats->objData.size(), stats->n_migrateobjs, stats->commData.size()-newCommData.size());
+  if (mig.size() != stats->objData.size())
+    CmiPrintf("Removed %zu nonmigratable objs (& %zu associated comms) from total n_objs:%zu (%d migratable objs left)\n",
+              stats->objData.size() - stats->n_migrateobjs,
+              stats->commData.size() - newCommData.size(), stats->objData.size(),
+              stats->n_migrateobjs);
 
   // swap to new data
-  stats->objData = nonmig;
+  stats->objData = mig;
   stats->from_proc = new_from_proc;
   stats->to_proc = new_to_proc;
 
