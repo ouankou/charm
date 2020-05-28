@@ -423,7 +423,6 @@ void CentralLB::buildStats()
     // copy all data in individual messages to this big structure
     // Space has already been reserved in ReceiveStats
     for (int pe=0; pe<CkNumPes(); pe++) {
-       int i;
        CLBStatsMsg *msg = statsMsgsList[pe];
        if(msg == NULL) continue;
        statsData->objData.insert(statsData->objData.end(), msg->objData, msg->objData + msg->n_objs);

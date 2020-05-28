@@ -151,14 +151,14 @@ void BaseLB::LDStats::makeCommHash() {
   objHash = new int[hashSize];
   for(i=0;i<hashSize;i++)
         objHash[i] = -1;
-   
+  i = 0;
   for(const auto& obj : objData) {
         const CmiUInt8 &oid = obj.objID();
         int hash = ObjKey(oid, hashSize);
 	CmiAssert(hash != -1);
         while(objHash[hash] != -1)
             hash = (hash+1)%hashSize;
-        objHash[hash] = i;
+        objHash[hash] = i++;
   }
 }
 
