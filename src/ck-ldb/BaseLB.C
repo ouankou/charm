@@ -311,6 +311,7 @@ void BaseLB::LDStats::print()
     CkPrintf("\n");
   }
 
+  i = 0;
   CkPrintf("------------- Object Data: %zu objects -------------\n", objData.size());
   for(auto &odata : objData) {
       CkPrintf("Object %d\n",i++);
@@ -323,10 +324,10 @@ void BaseLB::LDStats::print()
       CkPrintf("   Wall = %f\n",odata.wallTime);
   }
 
+  i = 0;
   CkPrintf("------------- Comm Data: %zu records -------------\n", commData.size());
-  std::vector<LDCommData> &cdata = commData;
   for(const auto& comm : commData) {
-      CkPrintf("Link %d\n",i);
+      CkPrintf("Link %d\n",i++);
 
       if (comm.from_proc())
 	CkPrintf("    sender PE = %d\t",comm.src_proc);
