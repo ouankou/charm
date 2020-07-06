@@ -8,6 +8,9 @@ migratable heap allocation to arbitrary clients.
 #include "conv-config.h"
 
 #ifdef __cplusplus
+#include <vector>
+#include <tuple>
+
 extern "C" {
 #endif
 
@@ -27,6 +30,7 @@ CmiIsomallocContext CmiIsomallocContextCreate(int myunit, int numunits);
 void CmiIsomallocContextDelete(CmiIsomallocContext ctx);
 void CmiIsomallocContextPup(pup_er p, CmiIsomallocContext * ctxptr);
 void CmiIsomallocEnableRDMA(CmiIsomallocContext ctx, int enable); /* on by default */
+void CmiIsomallocContextEnableRecording(CmiIsomallocContext ctx, int enable); /* internal use only */
 
 /*Allocate/free from this context*/
 void * CmiIsomallocContextMalloc(CmiIsomallocContext ctx, size_t size);
@@ -37,6 +41,11 @@ void CmiIsomallocContextFree(CmiIsomallocContext ctx, void * ptr);
 size_t CmiIsomallocContextGetLength(CmiIsomallocContext ctx, void * ptr);
 
 CmiIsomallocContext CmiIsomallocGetThreadContext(CthThread th);
+
+#ifdef __cplusplus
+void CmiIsomallocGetRecordedHeap(CmiIsomallocContext ctx,
+  std::vector<std::tuple<uintptr_t, size_t, size_t>> & heap_vector);
+#endif
 
 /****** Converse Thread functionality that depends on Isomalloc ********/
 
