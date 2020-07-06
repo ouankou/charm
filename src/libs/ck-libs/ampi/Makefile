@@ -33,6 +33,7 @@ FUNCPTR_LOADER_OBJ=$(AMPI_LIBDIR)/ampi_funcptr_loader.o
 FUNCPTR_LOADER_STUB_OBJ=$(AMPI_LIBDIR)/ampi_funcptr_loader_stub.o
 GLOBALS_PIP_OBJ=$(AMPI_LIBDIR)/ampi_globals_pip.o
 GLOBALS_FS_OBJ=$(AMPI_LIBDIR)/ampi_globals_fs.o
+GLOBALS_PIE_OBJ=$(AMPI_LIBDIR)/ampi_globals_pie.o
 
 AMPI_TARGET = \
   $(DEST) \
@@ -50,7 +51,7 @@ ifeq (1,$(CMK_SUPPORTS_PIPGLOBALS))
   AMPI_TARGET += $(GLOBALS_PIP_OBJ)
 endif
 ifeq (1,$(CMK_SUPPORTS_FSGLOBALS))
-  AMPI_TARGET += $(GLOBALS_FS_OBJ)
+  AMPI_TARGET += $(GLOBALS_FS_OBJ) $(GLOBALS_PIE_OBJ)
 endif
 
 ifeq ($(CMK_NO_BUILD_SHARED),false)
@@ -225,6 +226,9 @@ $(GLOBALS_FS_OBJ): ampi_globals_fs.C $(HEADDEP)
 	$(CHARMC) -c $< -o $@
 
 $(GLOBALS_PIP_OBJ): ampi_globals_pip.C $(HEADDEP)
+	$(CHARMC) -c $< -o $@
+
+$(GLOBALS_PIE_OBJ): ampi_globals_pie.C $(HEADDEP)
 	$(CHARMC) -c $< -o $@
 
 clean:
