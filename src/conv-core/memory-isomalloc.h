@@ -23,6 +23,10 @@ typedef struct CmiIsomallocContext {
   void * opaque;
 } CmiIsomallocContext;
 
+typedef struct CmiIsomallocRegion {
+  void * start, * end;
+} CmiIsomallocRegion;
+
 /*Build/pup/destroy a context.*/
 /* TODO: Some kind of registration scheme so multiple users can coexist.
  * No use case for this currently exists. */
@@ -31,6 +35,7 @@ void CmiIsomallocContextDelete(CmiIsomallocContext ctx);
 void CmiIsomallocContextPup(pup_er p, CmiIsomallocContext * ctxptr);
 void CmiIsomallocEnableRDMA(CmiIsomallocContext ctx, int enable); /* on by default */
 void CmiIsomallocContextEnableRecording(CmiIsomallocContext ctx, int enable); /* internal use only */
+CmiIsomallocRegion CmiIsomallocContextGetUsedExtent(CmiIsomallocContext ctx);
 
 /*Allocate/free from this context*/
 void * CmiIsomallocContextMalloc(CmiIsomallocContext ctx, size_t size);
