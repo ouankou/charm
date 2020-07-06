@@ -59,6 +59,9 @@ Substantially rewritten by Evan Ramos in 2019.
 #include <sys/personality.h>
 #endif
 
+#include <unordered_map>
+#include <utility>
+
 template <typename T>
 static inline typename std::enable_if<std::is_pointer<T>::value>::type pup_raw_pointer(PUP::er & p, T & ptr)
 {
@@ -967,6 +970,8 @@ struct isommap
     pup_raw_pointer(p, allocated_extent);
     p | use_rdma;
 
+    p | protect_regions;
+
     const size_t totalsize = allocated_extent - start;
 
     if (p.isUnpacking())
@@ -1019,6 +1024,18 @@ struct isommap
 
   void JustMigrated()
   {
+    for (const auto & region : protect_regions)
+    {
+      mprotect((void *)std::get<0>(region), std::get<1>(region), std::get<2>(region));
+    }
+  }
+
+  void protect(void * addr, size_t len, int prot)
+  {
+    CmiLock(lock);
+    protect_regions.emplace_back((uintptr_t)addr, len, prot);
+    CmiUnlock(lock);
+    mprotect(addr, len, prot);
   }
 
   void clear()
@@ -1042,6 +1059,7 @@ struct isommap
   // canonical data
   uint8_t * start, * end, * allocated_extent;
   int use_rdma;
+  std::vector<std::tuple<uintptr_t, size_t, int>> protect_regions;
 
   // local data
   CmiNodeLock lock;
@@ -2623,6 +2641,16 @@ size_t CmiIsomallocContextGetLength(CmiIsomallocContext ctx, void * ptr)
 {
   auto pool = (Mempool *)ctx.opaque;
   return pool->length(ptr);
+}
+
+void CmiIsomallocContextProtect(CmiIsomallocContext ctx, void * addr, size_t len, int prot)
+{
+  CmiMemoryIsomallocDisablePush();
+
+  auto pool = (Mempool *)ctx.opaque;
+  pool->backend.protect(addr, len, prot);
+
+  CmiMemoryIsomallocDisablePop();
 }
 
 void CmiIsomallocGetRecordedHeap(CmiIsomallocContext ctx, std::vector<std::tuple<uintptr_t, size_t, size_t>> & heap_vector)
