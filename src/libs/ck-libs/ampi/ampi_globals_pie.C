@@ -12,6 +12,8 @@
 #include <string>
 #include <atomic>
 #include <vector>
+#include <map>
+#include <functional>
 
 #if CMK_HAS_DL_ITERATE_PHDR
 #include <link.h>
@@ -83,7 +85,6 @@ struct pieglobalsstruct
 
 struct local_heap_entry
 {
-  void * source;
   void * addr;
   size_t size;
 };
@@ -330,10 +331,12 @@ void AMPI_Node_Setup(int numranks)
 }
 
 
+using heap_map_t = std::map<uintptr_t, local_heap_entry, std::greater<uintptr_t>>;
+
 static void replace_in_range(
   size_t myrank,
   void * range_start, void * range_end,
-  const std::vector<local_heap_entry> & my_heap_vector,
+  const heap_map_t & my_heap_map,
   char * dstheapstart, CmiIsomallocRegion srcheap,
   const std::vector<char *> & segment_allocations,
   const char * from)
@@ -378,23 +381,21 @@ static void replace_in_range(
       *scan = out;
     }
 #else
-    // slow O(n^2) method
-    for (const auto & entry : my_heap_vector)
+    // O(log n) method
+    auto iter = my_heap_map.lower_bound((uintptr_t)data);
+    if (iter != my_heap_map.end() && /* (char *)iter->first <= data && */ data <= (char *)iter->first + iter->second.size)
     {
-      if (entry.source <= data && data <= (char *)entry.source + entry.size)
-      {
-        void * out = (char *)entry.addr + ((char *)data - (char *)entry.source);
+      void * out = (char *)iter->second.addr + ((char *)data - (char *)iter->first);
 #if PIEGLOBALS_DEBUG >= 2
-        if (!quietModeRequested)
-          CmiPrintf("pieglobals> [%d][%d][%zu] "
-                    "0x%012" PRIxPTR ": found 0x%012" PRIxPTR ", writing 0x%012" PRIxPTR
-                    " (in %s, to heap)\n",
-                    CmiMyNode(), CmiMyPe(), myrank,
-                    (uintptr_t)scan, (uintptr_t)data, (uintptr_t)out,
-                    from);
+      if (!quietModeRequested)
+        CmiPrintf("pieglobals> [%d][%d][%zu] "
+                  "0x%012" PRIxPTR ": found 0x%012" PRIxPTR ", writing 0x%012" PRIxPTR
+                  " (in %s, to heap)\n",
+                  CmiMyNode(), CmiMyPe(), myrank,
+                  (uintptr_t)scan, (uintptr_t)data, (uintptr_t)out,
+                  from);
 #endif
-        *scan = out;
-      }
+      *scan = out;
     }
 #endif
   }
@@ -494,8 +495,7 @@ void AMPI_Rank_Setup(int myrank, int numranks, CmiIsomallocContext ctx)
 
   CmiIsomallocContextEnableRandomAccess(ctx);
 
-  std::vector<local_heap_entry> my_heap_vector;
-  my_heap_vector.reserve(pieglobalsdata.global_constructor_heap.size());
+  heap_map_t my_heap_map;
   for (const auto & entry : pieglobalsdata.global_constructor_heap)
   {
     const auto src = (void *)std::get<0>(entry);
@@ -509,7 +509,7 @@ void AMPI_Rank_Setup(int myrank, int numranks, CmiIsomallocContext ctx)
 
     memcpy(dst, src, size);
 
-    my_heap_vector.emplace_back(local_heap_entry{src, dst, size});
+    my_heap_map.emplace((uintptr_t)src, local_heap_entry{dst, size});
   }
 
   // apply fixups here
@@ -529,18 +529,19 @@ void AMPI_Rank_Setup(int myrank, int numranks, CmiIsomallocContext ctx)
       // scan the globals for pointers to code, globals, or the global constructor heap
       if (!(item.flags & PF_X))
       {
-        replace_in_range(myrank, addr, addr + len, my_heap_vector, mallocstart, srcheap, segment_allocations, obj.name.c_str());
+        replace_in_range(myrank, addr, addr + len, my_heap_map, mallocstart, srcheap, segment_allocations, obj.name.c_str());
       }
     }
   }
 
-  // replace_in_range(myrank, heapBefore.end, heap.end, my_heap_vector, mallocstart, srcheap, segment_allocations, "FULL HEAP - BAD");
+  // replace_in_range(myrank, heapBefore.end, heap.end, my_heap_map, mallocstart, srcheap, segment_allocations, "FULL HEAP - BAD");
 
 #if 1
   // scan the global constructor heap
-  for (const auto & entry : my_heap_vector)
+  for (const auto & entry : my_heap_map)
   {
-    replace_in_range(myrank, entry.addr, (char *)entry.addr + entry.size, my_heap_vector, mallocstart, srcheap, segment_allocations, "heap");
+    const local_heap_entry & dst = entry.second;
+    replace_in_range(myrank, dst.addr, (char *)dst.addr + dst.size, my_heap_map, mallocstart, srcheap, segment_allocations, "heap");
   }
 #endif
 
