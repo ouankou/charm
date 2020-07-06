@@ -116,5 +116,6 @@ int main(int argc, char ** argv)
     CkAbort("Could not open fsglobals user program!");
   }
 
-  return AMPI_FuncPtr_Loader(myexe, argc, argv);
+  AMPI_FuncPtr_Populate_Binary(myexe);
+  return AMPI_Main_Dispatch(myexe, argc, argv);
 }

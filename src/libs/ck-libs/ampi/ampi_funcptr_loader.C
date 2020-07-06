@@ -25,10 +25,9 @@ static void AMPI_FuncPtr_Pack(struct AMPI_FuncPtr_Transport * x)
 #undef AMPI_CUSTOM_FUNC
 }
 
-static void AMPI_FuncPtr_Unpack_Dispatch(SharedObject myexe, struct AMPI_FuncPtr_Transport * x)
+AMPI_FuncPtr_Unpack_t AMPI_FuncPtr_Unpack_Locate(SharedObject myexe)
 {
-  typedef int (*myPtrUnpackType)(struct AMPI_FuncPtr_Transport *);
-  auto myPtrUnpack = (myPtrUnpackType)dlsym(myexe, "AMPI_FuncPtr_Unpack");
+  auto myPtrUnpack = (AMPI_FuncPtr_Unpack_t)dlsym(myexe, "AMPI_FuncPtr_Unpack");
 
   if (myPtrUnpack == nullptr)
   {
@@ -36,19 +35,18 @@ static void AMPI_FuncPtr_Unpack_Dispatch(SharedObject myexe, struct AMPI_FuncPtr
     CkAbort("Could not complete AMPI_FuncPtr_Unpack!");
   }
 
-  myPtrUnpack(x);
+  return myPtrUnpack;
 }
 
-
-int AMPI_FuncPtr_Loader(SharedObject myexe, int argc, char ** argv)
+void AMPI_FuncPtr_Populate_Function(AMPI_FuncPtr_Unpack_t myPtrUnpack)
 {
   // populate the user binary's function pointer shim
-  {
-    AMPI_FuncPtr_Transport x;
-    AMPI_FuncPtr_Pack(&x);
-    AMPI_FuncPtr_Unpack_Dispatch(myexe, &x);
-  }
+  AMPI_FuncPtr_Transport x;
+  AMPI_FuncPtr_Pack(&x);
+  myPtrUnpack(&x);
+}
 
-  // jump to the user binary
-  return AMPI_Main_Dispatch(myexe, argc, argv);
+void AMPI_FuncPtr_Populate_Binary(SharedObject myexe)
+{
+  AMPI_FuncPtr_Populate_Function(AMPI_FuncPtr_Unpack_Locate(myexe));
 }
