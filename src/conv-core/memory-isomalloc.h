@@ -33,6 +33,7 @@ typedef struct CmiIsomallocRegion {
 CmiIsomallocContext CmiIsomallocContextCreate(int myunit, int numunits);
 void CmiIsomallocContextDelete(CmiIsomallocContext ctx);
 void CmiIsomallocContextPup(pup_er p, CmiIsomallocContext * ctxptr);
+void CmiIsomallocContextJustMigrated(CmiIsomallocContext ctx);
 void CmiIsomallocEnableRDMA(CmiIsomallocContext ctx, int enable); /* on by default */
 void CmiIsomallocContextEnableRecording(CmiIsomallocContext ctx, int enable); /* internal use only */
 CmiIsomallocRegion CmiIsomallocContextGetUsedExtent(CmiIsomallocContext ctx);
