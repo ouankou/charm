@@ -81,6 +81,8 @@ void TCharm::nodeInit()
   nChunks = CkNumPes();
   CmiGetArgIntDesc(argv,"-vp",&nChunks,"Set the total number of virtual processors");
   CmiGetArgIntDesc(argv,"+vp",&nChunks,NULL);
+
+  TCHARM_Node_Setup(nChunks);
 }
 
 void TCharm::procInit()
@@ -183,9 +185,11 @@ TCharm::TCharm(TCharmInitMsg *initMsg_)
   {
     if (tcharm_nomig) { /*Nonmigratable version, for debugging*/
       tid=CthCreate((CthVoidFn)startTCharmThread,initMsg,initMsg->opts.stackSize);
+      TCHARM_Element_Setup(thisIndex, initMsg->numElements, CmiIsomallocContext{});
     } else {
       CmiIsomallocContext heapContext = CmiIsomallocContextCreate(thisIndex, initMsg->numElements);
       tid = CthCreateMigratable((CthVoidFn)startTCharmThread,initMsg,initMsg->opts.stackSize, heapContext);
+      TCHARM_Element_Setup(thisIndex, initMsg->numElements, heapContext);
       CmiIsomallocContextEnableRandomAccess(heapContext);
     }
   }
