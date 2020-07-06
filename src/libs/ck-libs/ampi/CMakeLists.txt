@@ -6,7 +6,7 @@ set(ampi-h-sources ampi.h ampi-interoperate.h ampif.h ampiimpl.h ddt.h ampi_func
 
 add_library(ampi-compat compat_ampi.c
        compat_ampim.C compat_ampifm.C compat_ampicm.C
-       compat_ampicpp.C)
+       compat_ampicpp.C compat_ampins.C)
 
 add_library(moduleampi ${ampi-cxx-sources} ${ampi-h-sources})
 add_dependencies(moduleampi moduletcharm ck ampi_funcptr_shim ampi_funcptr_shim_main ampi_funcptr_shim_fortran ampi_funcptr_shim_fmpimain)
