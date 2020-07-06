@@ -1046,6 +1046,37 @@ struct isommap
     allocated_extent = start;
   }
 
+  void * permanent_alloc(size_t size)
+  {
+    const size_t realsize = CMIALIGN(size, pagesize);
+
+    CmiLock(lock);
+
+    void * const mapped = map_global_memory(allocated_extent, realsize);
+    if (mapped != nullptr)
+      allocated_extent += realsize;
+
+    CmiUnlock(lock);
+    return mapped;
+  }
+
+  void * permanent_alloc(size_t size, size_t align)
+  {
+    const size_t realsize = CMIALIGN(size, pagesize);
+
+    CmiLock(lock);
+
+    const auto alignstart = (uint8_t *)CMIALIGN((uintptr_t)allocated_extent, align);
+    const size_t allocsize = realsize + (alignstart - allocated_extent);
+
+    void * const mapped = map_global_memory(allocated_extent, allocsize);
+    if (mapped != nullptr)
+      allocated_extent += allocsize;
+
+    CmiUnlock(lock);
+    return mapped;
+  }
+
   void EnableRDMA(int enable)
   {
     use_rdma = enable;
@@ -2666,6 +2697,31 @@ size_t CmiIsomallocContextGetLength(CmiIsomallocContext ctx, void * ptr)
 {
   auto pool = (Mempool *)ctx.opaque;
   return pool->length(ptr);
+}
+
+void * CmiIsomallocContextPermanentAlloc(CmiIsomallocContext ctx, size_t size)
+{
+  CmiMemoryIsomallocDisablePush();
+
+  auto pool = (Mempool *)ctx.opaque;
+  auto ret = pool->backend.permanent_alloc(size);
+
+  CmiMemoryIsomallocDisablePop();
+
+  return ret;
+}
+
+void * CmiIsomallocContextPermanentAllocAlign(CmiIsomallocContext ctx, size_t align, size_t size)
+{
+  CmiMemoryIsomallocDisablePush();
+
+  auto pool = (Mempool *)ctx.opaque;
+  size_t real_align = isomalloc_internal_validate_align(align);
+  auto ret = pool->backend.permanent_alloc(size, real_align);
+
+  CmiMemoryIsomallocDisablePop();
+
+  return ret;
 }
 
 void CmiIsomallocContextProtect(CmiIsomallocContext ctx, void * addr, size_t len, int prot)
