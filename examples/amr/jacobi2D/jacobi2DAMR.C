@@ -33,10 +33,10 @@ void AmrUserData :: deleteChildData(void* data)
 
 void Jacobi2DAMR :: doComputation(void)
 {
-  for(int i=1; i <= cellSize ;i++) 
-    for(int j=1; j<=cellSize;j++) 
-      newDataGrid[i][j] = 0.2 * (dataGrid[i][j-1] + dataGrid[i][j+1] 
-         			 +dataGrid[i][j] +dataGrid[i-1][j] +dataGrid[i+1][j]);
+#pragma omp parallel for
+  for(int i=1; i<=cellSize; i++)
+    for(int j=1; j<=cellSize; j++)
+      newDataGrid[i][j] = 0.2 * (dataGrid[i][j-1] + dataGrid[i][j+1] +dataGrid[i][j] + dataGrid[i-1][j] + dataGrid[i+1][j]);
   copyGrid();
   
 }

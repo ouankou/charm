@@ -2,18 +2,19 @@
 CHARMDIR=../../..
 CHARMC=$(CHARMDIR)/bin/charmc $(OPTS)
 AMRLIB=$(CHARMDIR)/lib/libamr.a
+FLAGS=-fopenmp
 
-DEST=jacobi
-OBJS = 	jacobi2DAMR.o 
+DEST=jacobi.out
+OBJS=jacobi2DAMR.o
 
 all: $(DEST)
 
 $(DEST): $(OBJS)
-	$(CHARMC) -lm -language charm++ -o $(DEST) $(OBJS) $(AMRLIB)
+	$(CHARMC) $(FLAGS) -lm -language charm++ -o $(DEST) $(OBJS) $(AMRLIB)
 	chmod 755 $(DEST)
 
 jacobi2DAMR.o: jacobi2DAMR.C jacobi2DAMR.decl.h jacobi2DAMR.def.h
-	$(CHARMC) -g -c jacobi2DAMR.C
+	$(CHARMC) $(FLAGS) -g -c jacobi2DAMR.C
 
 jacobi2DAMR.decl.h jacobi2DAMR.def.h: jacobi2DAMR.ci
 	$(CHARMC) jacobi2DAMR.ci

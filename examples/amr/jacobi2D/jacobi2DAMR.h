@@ -35,7 +35,7 @@ class Jacobi2DAMR:public AmrUserData {
 
  public:
   Jacobi2DAMR() {
-    cellSize = 64;
+    cellSize = 512;
     dataGrid = new double* [cellSize+2];
     newDataGrid = new double* [cellSize+2];
     for(int i=0;i< cellSize+2;i++) {
