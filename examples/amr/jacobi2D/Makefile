@@ -2,7 +2,7 @@
 CHARMDIR=../../..
 CHARMC=$(CHARMDIR)/bin/charmc $(OPTS)
 AMRLIB=$(CHARMDIR)/lib/libamr.a
-FLAGS=-fopenmp
+FLAGS=-fopenmp -lgomp -lpthread -foffload=nvptx-none -fno-stack-protector -flto -L/usr/lib/gcc/x86_64-linux-gnu/7
 
 DEST=jacobi.out
 OBJS=jacobi2DAMR.o

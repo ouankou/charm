@@ -33,10 +33,31 @@ void AmrUserData :: deleteChildData(void* data)
 
 void Jacobi2DAMR :: doComputation(void)
 {
+    // copy data from class object to the local variables for mapping later
+    // class objects can't be mapped directly
+    int cell_size = cellSize;
+    double new_data[cellSize+2][cellSize+2];
+    double old_data[cellSize+2][cellSize+2];
+    for(int i=1; i<=cellSize; i++)
+        for(int j=1; j<=cellSize; j++)
+            old_data[i][j] = dataGrid[i][j];
+
+#pragma omp target teams distribute parallel for map(to: cell_size, old_data) map(tofrom: new_data) collapse(2)
+    for(int i=1; i<=cell_size; i++)
+        for(int j=1; j<=cell_size; j++)
+            new_data[i][j] = 0.2 * (old_data[i][j-1] + old_data[i][j+1] + old_data[i][j] + old_data[i-1][j] + old_data[i+1][j]);
+
+    // copy the results back to class object
+#pragma omp parallel for
+    for(int i=1; i<=cellSize; i++)
+        for(int j=1; j<=cellSize; j++)
+            newDataGrid[i][j] = new_data[i][j];
+    /*
 #pragma omp parallel for
   for(int i=1; i<=cellSize; i++)
     for(int j=1; j<=cellSize; j++)
       newDataGrid[i][j] = 0.2 * (dataGrid[i][j-1] + dataGrid[i][j+1] +dataGrid[i][j] + dataGrid[i-1][j] + dataGrid[i+1][j]);
+    */
   copyGrid();
   
 }
